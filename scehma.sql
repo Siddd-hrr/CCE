@@ -1,4 +1,3 @@
-//schema.sql
 
 
 -- Create DB (change name if you like)
