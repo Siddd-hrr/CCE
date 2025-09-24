@@ -1,4 +1,4 @@
-//server.js
+// server.js
 
 require("dotenv").config();
 
@@ -37,7 +37,7 @@ function authMiddleware(req, res, next) {
     const decoded = jwt.verify(token, SECRET);
     req.user = decoded; // { id, username, role }
     next();
-  } catch {
+  } catch (err) {
     return res.status(403).json({ message: "Invalid token" });
   }
 }
@@ -47,7 +47,7 @@ function authMiddleware(req, res, next) {
 =========================== */
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
+    if (!req.user || !allowedRoles.includes(req.user.role.toLowerCase())) {
       return res.status(403).json({ message: "Forbidden: insufficient role" });
     }
     next();
@@ -58,14 +58,14 @@ function requireRole(...allowedRoles) {
    AUTH ROUTES
 =========================== */
 
-// Register: default role = 'teacher' (HOD can later upgrade via DB)
+// Register: default role = 'teacher'
 app.post("/api/register", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ ok: false, message: "Email and password required" });
 
-  const hashed = await bcrypt.hash(password, 10);
   try {
+    const hashed = await bcrypt.hash(password, 10);
     await pool.query(
       "INSERT INTO users (username, password, role) VALUES (?, ?, 'teacher')",
       [email, hashed]
@@ -80,54 +80,65 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const [rows] = await pool.query("SELECT * FROM users WHERE username=?", [email]);
-  const user = rows[0];
-  if (!user) return res.status(404).json({ message: "User not found" });
+  try {
+    const [rows] = await pool.query("SELECT * FROM users WHERE username=?", [email]);
+    const user = rows[0];
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(400).json({ message: "Wrong password" });
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).json({ message: "Wrong password" });
 
-  const token = jwt.sign(
-    { id: user.id, username: user.username, role: user.role },
-    SECRET,
-    { expiresIn: "1d" }
-  );
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role.toLowerCase() },
+      SECRET,
+      { expiresIn: "1d" }
+    );
 
-  res.json({ token });
+    res.json({ token });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// Who am I (for role-aware UI)
+// Who am I
 app.get("/api/me", authMiddleware, async (req, res) => {
   res.json({ id: req.user.id, username: req.user.username, role: req.user.role });
 });
 
-// Re-verify on sensitive page open (password check without new token)
+// Re-verify password
 app.post("/api/reverify", authMiddleware, async (req, res) => {
   const { password } = req.body;
   if (!password) return res.status(400).json({ message: "Password required" });
 
-  const [rows] = await pool.query("SELECT * FROM users WHERE id=?", [req.user.id]);
-  const user = rows[0];
-  if (!user) return res.status(404).json({ message: "User not found" });
+  try {
+    const [rows] = await pool.query("SELECT * FROM users WHERE id=?", [req.user.id]);
+    const user = rows[0];
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(400).json({ message: "Verification failed" });
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).json({ message: "Verification failed" });
 
-  // success, just return ok. (Client decides what to do next)
-  res.json({ ok: true });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 /* ===========================
    STUDENT ROUTES
 =========================== */
 
-// Everyone (HOD + Teacher) can view
+// View students
 app.get("/api/students", authMiddleware, async (req, res) => {
-  const [rows] = await pool.query("SELECT * FROM students ORDER BY roll ASC");
-  res.json(rows);
+  try {
+    const [rows] = await pool.query("SELECT * FROM students ORDER BY roll ASC");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// Only HOD can create students
+// Create student (HOD only)
 app.post("/api/students", authMiddleware, requireRole("hod"), async (req, res) => {
   const { roll, name, class: className, section, mobile } = req.body;
   if (!roll || !name) return res.status(400).json({ message: "roll and name are required" });
@@ -143,56 +154,74 @@ app.post("/api/students", authMiddleware, requireRole("hod"), async (req, res) =
   }
 });
 
-// Only HOD can delete students
+// Delete student (HOD only)
 app.delete("/api/students/:id", authMiddleware, requireRole("hod"), async (req, res) => {
-  await pool.query("DELETE FROM students WHERE id=?", [req.params.id]);
-  res.json({ ok: true });
+  try {
+    await pool.query("DELETE FROM students WHERE id=?", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 /* ===========================
    ATTENDANCE ROUTES
 =========================== */
 
-// Teachers + HOD can mark attendance
+// Mark attendance
 app.post("/api/attendance", authMiddleware, requireRole("hod", "teacher"), async (req, res) => {
   const { studentId, date, status } = req.body;
   if (!studentId || !date || !status)
     return res.status(400).json({ message: "studentId, date, status required" });
 
-  await pool.query(
-    "INSERT INTO attendance (student_id, date, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status=?",
-    [studentId, date, status, status]
-  );
-  res.json({ ok: true });
+  try {
+    await pool.query(
+      "INSERT INTO attendance (student_id, date, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status=?",
+      [studentId, date, status, status]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-// Everyone (HOD + Teacher) can view attendance
+// View attendance
 app.get("/api/attendance/:month/:year", authMiddleware, async (req, res) => {
   const { month, year } = req.params;
-  const [rows] = await pool.query(
-    `SELECT s.id as student_id, s.roll, s.name, s.class, s.section, a.date, a.status 
-     FROM attendance a 
-     JOIN students s ON a.student_id = s.id 
-     WHERE MONTH(a.date)=? AND YEAR(a.date)=?
-     ORDER BY a.date ASC`,
-    [month, year]
-  );
-  res.json(rows);
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT s.id as student_id, s.roll, s.name, s.class, s.section, a.date, a.status
+       FROM attendance a
+       JOIN students s ON a.student_id = s.id
+       WHERE MONTH(a.date)=? AND YEAR(a.date)=?
+       ORDER BY a.date ASC`,
+      [month, year]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 /* ===========================
-   DASHBOARD STATS (read-only)
+   DASHBOARD STATS
 =========================== */
 app.get("/api/stats/:month/:year", authMiddleware, async (req, res) => {
   const { month, year } = req.params;
-  const [rows] = await pool.query(
-    `SELECT status, COUNT(*) as count 
-     FROM attendance 
-     WHERE MONTH(date)=? AND YEAR(date)=? 
-     GROUP BY status`,
-    [month, year]
-  );
-  res.json(rows);
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT status, COUNT(*) as count
+       FROM attendance
+       WHERE MONTH(date)=? AND YEAR(date)=?
+       GROUP BY status`,
+      [month, year]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 /* ===========================
@@ -200,5 +229,5 @@ app.get("/api/stats/:month/:year", authMiddleware, async (req, res) => {
 =========================== */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(✅ Server running on http://localhost:${PORT});
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
