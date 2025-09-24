@@ -1,0 +1,19 @@
+{
+  "name": "cce",
+  "version": "1.0.0",
+  "description": "frontend -dashboard.html -index.html -style.css -script.js",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "autoprefixer": "^10.4.21",
+    "chart.js": "^4.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13"
+  }
+}

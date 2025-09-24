@@ -1,0 +1,36 @@
+
+
+
+
+
+# Backend dependencies for Attendance App
+
+# Web framework for backend API
+express
+
+# Middleware for handling cross-origin requests
+cors
+
+# Middleware for parsing JSON request bodies
+body-parser
+
+# Secure password hashing
+bcrypt
+
+# JSON Web Token authentication
+jsonwebtoken
+
+# MySQL database connector
+mysql2
+
+# For loading environment variables
+dotenv
+
+
+# HTTP request logger for debugging
+morgan
+
+# For validating request bodies (optional)
+express-validator
+
+

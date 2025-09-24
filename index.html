@@ -1,0 +1,103 @@
+//index.html
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cloudy Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="login-body" data-page="login">
+  <div class="login-container">
+    <!-- Left Side -->
+    <div class="login-left">
+      <h2>HELLO!</h2>
+      <p>Sign in to your account</p>
+
+      <!-- Toast -->
+      <div id="toast" class="toast hidden"></div>
+
+      <!-- Login Form -->
+      <form id="loginForm" autocomplete="off">
+        <div class="input-group">
+          <span class="icon">📧</span>
+          <input type="email" id="email" placeholder="E-mail" required autocomplete="new-email" value=""/>
+        </div>
+        <div class="input-group">
+          <span class="icon">🔒</span>
+          <input type="password" id="password" placeholder="Password" required autocomplete="new-password" value=""/>
+          <span class="toggle" id="togglePassword">👁</span>
+        </div>
+        <div class="options">
+          <label><input type="checkbox" id="rememberMe" /> Remember me</label>
+          <a href="#" id="forgotPassword">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn">SIGN IN</button>
+        <p class="create">Don’t have an account? <a href="#" id="openRegister">Create</a></p>
+      </form>
+    </div>
+
+    <!-- Right Side -->
+    <div class="login-right">
+      <!-- Gradient Cloud Shape -->
+      <svg class="cloud-shape" viewBox="0 0 600 500" preserveAspectRatio="none">
+        <path d="
+          M0,100
+          C120,50 180,150 300,100
+          C420,50 480,180 600,100
+          L600,400
+          C480,450 420,320 300,400
+          C180,480 120,350 0,400
+          Z" fill="white"/>
+      </svg>
+
+      <div class="welcome-text">
+        <h2>Welcome Back!</h2>
+        <p>Login to access the Student Attendance Dashboard.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div id="registerModal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Create Account</h3>
+      <form id="registerForm" autocomplete="off">
+        <div class="input-group">
+          <span class="icon">📧</span>
+          <input type="email" id="regEmail" placeholder="E-mail" required autocomplete="new-email" value=""/>
+        </div>
+        <div class="input-group">
+          <span class="icon">🔒</span>
+          <input type="password" id="regPassword" placeholder="Password" required minlength="6" autocomplete="new-password" value=""/>
+          <span class="toggle" id="toggleRegPassword">👁</span>
+        </div>
+        <div class="input-group">
+          <span class="icon">🔒</span>
+          <input type="password" id="regPassword2" placeholder="Confirm Password" required minlength="6" autocomplete="new-password" value=""/>
+          <span class="toggle" id="toggleRegPassword2">👁</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-outline" id="closeRegister">Cancel</button>
+          <button type="submit" class="btn">Create</button>
+        </div>
+      </form>
+      <p class="small text-muted mt-2">By creating an account, your data will be stored locally. Later you can migrate to backend storage.</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    /* Ensure all fields start empty on load */
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("email").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("regEmail").value = "";
+      document.getElementById("regPassword").value = "";
+      document.getElementById("regPassword2").value = "";
+    });
+  </script>
+</body>
+</html>
